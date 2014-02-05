@@ -165,7 +165,7 @@ sub minmax {
 	if ($w =~ /\.bw$/) {
 	    eval "require Bio::DB::BigWig;1" or die $@;
 	    my $wig = Bio::DB::BigWig->new(-bigwig=>$w) or next;
-	    ($a,$b,$c,$d) = $self->bigwig_stats($autoscale,$wig->features(@args));
+	    ($a,$b,$c,$d) = $self->summary_stats($autoscale,$wig->features(@args));
 	} elsif ($w =~ /\.wi\w{1,3}$/) {
 	    eval "require Bio::Graphics::Wiggle;1" or die $@;
 	    my $wig = Bio::Graphics::Wiggle->new($w);

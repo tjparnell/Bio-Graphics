@@ -17,7 +17,7 @@ sub minmax {
     my $do_max     = !defined $max_score;
 
     if (@$parts && $self->feature->can('statistical_summary')) {
-	my ($min,$max,$mean,$stdev) = eval {$self->bigwig_stats($autoscale,$self->feature)};
+	my ($min,$max,$mean,$stdev) = eval {$self->summary_stats($autoscale,$self->feature)};
 	$min_score = $min if $do_min;
 	$max_score = $max if $do_max;
 	return $self->sanity_check($min_score,$max_score,$mean,$stdev);
@@ -43,7 +43,7 @@ sub minmax {
     return $self->sanity_check($min_score,$max_score);
 }
 
-sub bigwig_stats {
+sub summary_stats {
     my $self = shift;
     my ($autoscale,$feature) = @_;
     my $s;
@@ -52,10 +52,20 @@ sub bigwig_stats {
     } elsif ($autoscale eq 'chromosome') {
 	$s = $feature->chr_stats;
     } else {
-	$s = $feature->score;
+	$s = $feature->statistical_summary(1);
     }
-    return $self->clip($autoscale,
-		       $s->{minVal},$s->{maxVal},Bio::DB::BigWig::binMean($s),Bio::DB::BigWig::binStdev($s));
+    my ($mean, $sd);
+    if ($s->{validCount}) {
+        $mean = $s->{sumData} / $s->{validCount};
+        my $var = $s->{sumSquares} - $s->{sumData}**2/$s->{validCount};
+        $var /= $s->{validCount} - 1 if $s->{validCount} > 1;
+        $var = 0 if $var < 0;
+        $sd = sqrt($var);
+    } else {
+        $mean = undef;
+        $sd   = 0;
+    }
+    return $self->clip($autoscale,$s->{minVal},$s->{maxVal},$mean,$sd);
 }
 
 sub wig_stats {
